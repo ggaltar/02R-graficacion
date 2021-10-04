@@ -115,7 +115,7 @@ fallecidos_x_sexo <-
     group_by(sexo, mes = format(fecha,"%m")) %>%
     summarise(fallecidos = sum(fallecidos))
 
-# Despliegue de observaciones aleatorias
+# Despliegue de observaciones aleatorias para corroborar
 slice_sample(fallecidos_x_sexo, n = 10)
 
 # Gráfico de barras agrupadas de cantidad de hombres y mujeres fallecidos por mes
