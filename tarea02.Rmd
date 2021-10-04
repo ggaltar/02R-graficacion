@@ -57,6 +57,7 @@ ggplot(caudales_x_mes, aes(x = mes, y = caudal, fill = rio)) +
   scale_x_discrete(labels = c("01" = "Ene", "02" = "Feb", "03" = "Mar", "04" = "Abr", "05" = "May", "06" = "Jun", "07" = "Jul", "08" = "Ago", "09" = "Set", "10" = "Oct", "11" = "Nov", "12" = "Dic"))
                 
 ```
+
 ### Histograma distribución de casos nuevos de Covid-19 en Costa Rica
 
 ```{r casos-nuevos}
