@@ -1,0 +1,132 @@
+---
+title: "Tarea 02 - Graficación y Tidyverse"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Carga de paquetes y de datos
+
+```{r carga-librerias, message = FALSE}
+# Carga de paquetes
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+```
+```{r carga-datos}
+# Datos de caudales de ríos
+rios <-
+  read.csv(file = 'https://raw.githubusercontent.com/tpb728O-programaciongeoespacialr/2021ii/main/datos/hidrologia/fdc/fdc.csv')
+
+# Datos de Covid-19 en Costa Rica
+covid <- 
+  read.csv(
+    file='https://raw.githubusercontent.com/tpb728O-programaciongeoespacialr/2021ii/main/datos/minsalud/covid/ultimafecha_CSV_GENERAL.csv', 
+    sep = ","
+  )
+```
+
+### Caudales mensuales promedio
+
+```{r caudales_mes}
+
+# Preparación de los datos de caudales promedio mensuales por río
+caudales_x_mes <-
+  rios %>%
+  rename(fecha = Tiempo,
+         Banano = Banano.mm..90km2.,
+         Pandora = Pandora.mm..637km2.) %>%
+  pivot_longer(cols = c(`Banano`, `Pandora`), names_to = "rio", values_to   = "caudal") %>%
+  mutate(fecha = as.Date(fecha, format = "%m/%d/%Y")) %>%
+  group_by(rio, mes = format(fecha,"%m")) %>%
+  summarise(caudal = mean(caudal))
+
+# Despliegue de observaciones aleatorias
+slice_sample(caudales_x_mes, n = 10)
+
+# Gráfico de barras apiladas de caudales promedio mensuales
+ggplot(caudales_x_mes, aes(x = mes, y = caudal, fill = rio)) +
+  ggtitle("Caudales promedio mensuales por río") +
+  geom_col() + 
+  scale_fill_manual(values = c("#264653", "#2a9d8f")) +
+  xlab("Mes") +
+  ylab("Caudal") +
+  labs(fill = "Río") +
+  scale_x_discrete(labels = c("01" = "Ene", "02" = "Feb", "03" = "Mar", "04" = "Abr", "05" = "May", "06" = "Jun", "07" = "Jul", "08" = "Ago", "09" = "Set", "10" = "Oct", "11" = "Nov", "12" = "Dic"))
+                
+```
+### Histograma distribución de casos nuevos de Covid-19 en Costa Rica
+
+```{r casos-nuevos}
+
+# Histograma distribución de casos nuevos
+
+covid %>%
+    ggplot(aes(x = nue_posi)) +
+    ggtitle("Distribución de casos nuevos de Covid-19 en Costa Rica")+
+    geom_histogram(binwidth = 100,
+                   color = "#8a5a44",
+                   fill = "#e6b8a2") +
+    scale_x_continuous(limits = c(0, 3300), 
+                       breaks = c(0,500,1000,1500,2000,2500,3000,3300)) +
+    ylim(0,40)+
+    ylab("Conteo") +
+    xlab("Casos nuevos")
+```
+
+### Cantidad de hombres y mujeres fallecidas por Covid en Costa Rica por mes
+
+```{r fallecidos}
+
+# Selección y adición de columnas con datos diarios de hombres y mujeres fallecidos
+
+covid_seleccion <-
+  covid %>%
+  select(FECHA, muj_fall, hom_fall) %>%
+  rename(fecha = FECHA,) %>%
+  mutate(fecha = as.Date(fecha, format = "%d/%m/%Y"))
+
+# Creación de nuevos vectores
+mu_fall <- c()
+ho_fall <- c()
+
+# Calcular los valores diarios
+for (i in 1:nrow(covid_seleccion)) {
+  mu_fall[i] <- covid_seleccion[i, 2]- covid_seleccion[i-1, 2]
+  ho_fall[i] <- covid_seleccion[i, 3]- covid_seleccion[i-1, 3]
+}
+
+# Agregar los vectores recién creados como columnas
+covid_seleccion$mujeres <- mu_fall
+covid_seleccion$hombres <- ho_fall
+
+# Reemplazar valores NA con ceros
+covid_seleccion[is.na(covid_seleccion)] <- 0
+
+# Preparación de los datos para crear gráfico
+
+fallecidos_x_sexo <-
+  covid_seleccion %>%
+    pivot_longer(cols = c(`mujeres`, `hombres`), 
+                 names_to = "sexo", 
+                 values_to = "fallecidos") %>%
+    group_by(sexo, mes = format(fecha,"%m")) %>%
+    summarise(fallecidos = sum(fallecidos))
+
+# Despliegue de observaciones aleatorias
+slice_sample(fallecidos_x_sexo, n = 10)
+
+# Gráfico de barras agrupadas de cantidad de hombres y mujeres fallecidos por mes
+ggplot(fallecidos_x_sexo, aes(x = mes, y = fallecidos, fill = sexo)) +
+  ggtitle("Cantidad de fallecidos de Covid por mes desde marzo 2020") +
+  geom_col(position = "dodge") + 
+  scale_fill_manual (labels = c('Hombres', 'Mujeres'),
+                    values = c("#463f3a", "#8a817c")) +
+  xlab("Mes") +
+  ylab("Fallecidos") +
+  labs(fill = "Sexo") +
+  scale_x_discrete(labels = c("01" = "Ene", "02" = "Feb", "03" = "Mar", "04" = "Abr", "05" = "May", "06" = "Jun", "07" = "Jul", "08" = "Ago", "09" = "Set", "10" = "Oct", "11" = "Nov", "12" = "Dic"))
+```
+
